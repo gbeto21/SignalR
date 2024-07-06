@@ -18,5 +18,11 @@ namespace SignalR.Server.Hubs
             //notify EVERYONE
             await Clients.All.SendAsync("viewCountUpdate", ViewCount);
         }
+
+        public string GetFullName(string firstName, string lastName)
+        {
+           return $"{firstName} {lastName}";
+        }
+
     }
 }

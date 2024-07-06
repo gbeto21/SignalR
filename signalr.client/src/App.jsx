@@ -4,17 +4,17 @@ import * as signalR from "@microsoft/signalr";
 import { CustomLogger } from "./CustomLogger";
 
 function App() {
-  const createHub = () => {
-    //Create connection
-    let connection = new signalR.HubConnectionBuilder()
-      //   .configureLogging(signalR.LogLevel.Trace)
-      .configureLogging(new CustomLogger())
-      .withUrl("wss://localhost:44343/hubs/view", {
-        skipNegotiation: true,
-        transport: signalR.HttpTransportType.WebSockets,
-      })
-      .build();
+  //Create connection
+  let connection = new signalR.HubConnectionBuilder()
+    //   .configureLogging(signalR.LogLevel.Trace)
+    .configureLogging(new CustomLogger())
+    .withUrl("wss://localhost:44343/hubs/view", {
+      skipNegotiation: true,
+      transport: signalR.HttpTransportType.WebSockets,
+    })
+    .build();
 
+  const createHub = () => {
     //On view update message from client
     connection.on("viewCountUpdate", (value) => {
       var counter = document.getElementById("viewCounter");
@@ -43,10 +43,32 @@ function App() {
     createHub();
   }, []);
 
+  const handleClick = () => {
+    const firstName = document.getElementById("inputFist").value;
+    const lastName = document.getElementById("inputLast").value;
+
+    connection
+      .invoke("GetFullName", firstName, lastName)
+      .then((val) => {
+        alert(val);
+      })
+      .catch((er) => {
+        console.error("💥 Error: ", er);
+      });
+  };
+
   return (
     <div>
       <h2>Clients conected: </h2>
       <span id="viewCounter">0</span>
+      <h2>Name concat</h2>
+      <p>
+        <input type="text" id="inputFist" />
+        <input type="text" id="inputLast" />
+        <button id="btnGetFullName" onClick={handleClick}>
+          Get Full Name
+        </button>
+      </p>
     </div>
   );
 }
