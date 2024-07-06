@@ -1,11 +1,14 @@
 import { useEffect } from "react";
 import "./App.css";
 import * as signalR from "@microsoft/signalr";
+import { CustomLogger } from "./CustomLogger";
 
 function App() {
   const createHub = () => {
     //Create connection
     let connection = new signalR.HubConnectionBuilder()
+      //   .configureLogging(signalR.LogLevel.Trace)
+      .configureLogging(new CustomLogger())
       .withUrl("wss://localhost:44343/hubs/view", {
         skipNegotiation: true,
         transport: signalR.HttpTransportType.WebSockets,
