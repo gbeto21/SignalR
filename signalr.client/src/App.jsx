@@ -1,49 +1,51 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { useEffect } from "react";
+import "./App.css";
+import * as signalR from "@microsoft/signalr";
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+  const createHub = () => {
+    //Create connection
+    let connection = new signalR.HubConnectionBuilder()
+      .withUrl("wss://localhost:44343/hubs/view", {
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets,
+      })
+      .build();
 
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
+    //On view update message from client
+    connection.on("viewCountUpdate", (value) => {
+      var counter = document.getElementById("viewCounter");
+      counter.innerText = value.toString();
+    });
 
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tabelLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
+    //Notify server we're watching
+    const notify = () => {
+      connection.send("notifyWatching");
+    };
 
-    return (
-        <div>
-            <h1 id="tabelLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        const data = await response.json();
-        setForecasts(data);
-    }
+    // start connection
+    const startSuccess = () => {
+      console.log("🌟 Connected.");
+      notify();
+    };
+
+    const startFail = (err) => {
+      console.error("💥 Conection failed", err);
+    };
+
+    connection.start().then(startSuccess, startFail);
+  };
+
+  useEffect(() => {
+    createHub();
+  }, []);
+
+  return (
+    <div>
+      <h2>Clients conected: </h2>
+      <span id="viewCounter">0</span>
+    </div>
+  );
 }
 
 export default App;
