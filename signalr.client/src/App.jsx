@@ -20,6 +20,11 @@ function App() {
       var counter = document.getElementById("viewCounter");
       counter.innerText = value.toString();
     });
+    connection.on("incrementView", (val) => {
+      const viewCountSpan = document.getElementById("viewCount");
+      viewCountSpan.innerText = val;
+      if (val % 10 === 0) connection.off("incrementView"); //Turns off the event handler.
+    });
 
     //Notify server we're watching
     const notify = () => {
@@ -57,6 +62,10 @@ function App() {
       });
   };
 
+  const handleIncrement = () => {
+    connection.invoke("IncrementServerView");
+  };
+
   return (
     <div>
       <h2>Clients conected: </h2>
@@ -67,6 +76,14 @@ function App() {
         <input type="text" id="inputLast" />
         <button id="btnGetFullName" onClick={handleClick}>
           Get Full Name
+        </button>
+      </p>
+      <p>
+        <p>
+          View Count: <span id="viewCount">0</span>
+        </p>
+        <button id="btnIncrement" onClick={handleIncrement}>
+          Increment view
         </button>
       </p>
     </div>

@@ -24,5 +24,11 @@ namespace SignalR.Server.Hubs
            return $"{firstName} {lastName}";
         }
 
+        public Task IncrementServerView()
+        {
+            ViewCount++;
+            return Clients.All.SendAsync("incrementView", ViewCount);
+        }
+
     }
 }
