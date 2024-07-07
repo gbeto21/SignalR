@@ -1,6 +1,0 @@
-@FindinTemplate_HostAddress = http://localhost:5120
-
-GET {{FindinTemplate_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

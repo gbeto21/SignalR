@@ -1,49 +1,93 @@
-import { useEffect, useState } from 'react';
-import './App.css';
+import { useEffect } from "react";
+import "./App.css";
+import * as signalR from "@microsoft/signalr";
+import { CustomLogger } from "./CustomLogger";
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+  //Create connection
+  let connection = new signalR.HubConnectionBuilder()
+    //   .configureLogging(signalR.LogLevel.Trace)
+    .configureLogging(new CustomLogger())
+    .withUrl("wss://localhost:44343/hubs/view", {
+      skipNegotiation: true,
+      transport: signalR.HttpTransportType.WebSockets,
+    })
+    .build();
 
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
+  const createHub = () => {
+    //On view update message from client
+    connection.on("viewCountUpdate", (value) => {
+      var counter = document.getElementById("viewCounter");
+      counter.innerText = value.toString();
+    });
+    connection.on("incrementView", (val) => {
+      const viewCountSpan = document.getElementById("viewCount");
+      viewCountSpan.innerText = val;
+      if (val % 10 === 0) connection.off("incrementView"); //Turns off the event handler.
+    });
 
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tabelLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
+    //Notify server we're watching
+    const notify = () => {
+      connection.send("notifyWatching");
+    };
 
-    return (
-        <div>
-            <h1 id="tabelLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        const data = await response.json();
-        setForecasts(data);
-    }
+    // start connection
+    const startSuccess = () => {
+      console.log("🌟 Connected.");
+      notify();
+    };
+
+    const startFail = (err) => {
+      console.error("💥 Conection failed", err);
+    };
+
+    connection.start().then(startSuccess, startFail);
+  };
+
+  useEffect(() => {
+    createHub();
+  }, []);
+
+  const handleClick = () => {
+    const firstName = document.getElementById("inputFist").value;
+    const lastName = document.getElementById("inputLast").value;
+
+    connection
+      .invoke("GetFullName", firstName, lastName)
+      .then((val) => {
+        alert(val);
+      })
+      .catch((er) => {
+        console.error("💥 Error: ", er);
+      });
+  };
+
+  const handleIncrement = () => {
+    connection.invoke("IncrementServerView");
+  };
+
+  return (
+    <div>
+      <h2>Clients conected: </h2>
+      <span id="viewCounter">0</span>
+      <h2>Name concat</h2>
+      <p>
+        <input type="text" id="inputFist" />
+        <input type="text" id="inputLast" />
+        <button id="btnGetFullName" onClick={handleClick}>
+          Get Full Name
+        </button>
+      </p>
+      <p>
+        <p>
+          View Count: <span id="viewCount">0</span>
+        </p>
+        <button id="btnIncrement" onClick={handleIncrement}>
+          Increment view
+        </button>
+      </p>
+    </div>
+  );
 }
 
 export default App;
